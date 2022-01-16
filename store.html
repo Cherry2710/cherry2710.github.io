@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>E4U Store</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">\
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<!--===============================================================================================-->	
+	<link rel="icon" type="image/png" href="images/icons/favicon.ico"/>
+<!--===============================================================================================-->
+
+	<link rel="stylesheet" type="text/css" href="vendor/perfect-scrollbar/perfect-scrollbar.css">
+<!--===============================================================================================-->
+	<link rel="stylesheet" type="text/css" href="css/util.css">
+	<link rel="stylesheet" type="text/css" href="css/main.css">
+<!--===============================================================================================-->
+
+
+<!-- Favicons -->
+<link href="assets/img/favicon.png" rel="icon">
+<link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,700,700i|Raleway:300,400,500,700,800|Montserrat:300,400,700" rel="stylesheet">
+
+<!-- Vendor CSS Files -->
+<link href="assets/vendor/aos/aos.css" rel="stylesheet">
+<link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+<link href="assets/vendor/boxicons/css/boxicons.min.css" rel="stylesheet">
+<link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+<link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.1/css/all.min.css" integrity="sha256-2XFplPlrFClt0bIdPgpz8H7ojnk10H69xRqd9+uTShA=" crossorigin="anonymous" />
+
+<!-- Template Main CSS File -->
+<link href="assets/css/style.css" rel="stylesheet">
+
+<script>
+	let serverUrl = 'https://tasklist-minh.herokuapp.com';
+	var user = null;
+	user = JSON.parse(localStorage.getItem("user"));
+	
+	const fetchTasklist = async () => {
+		let taskform = document.getElementById('task');
+			const taskListRequest = await fetch(`${serverUrl}/task_lists`,{
+				headers: {
+					...user
+				}
+			});
+			const sharedTaskListRequest = await fetch(`${serverUrl}/shared`,{
+				headers: {
+					...user
+				}
+			});
+
+			let taskLists = await taskListRequest.json();
+			const sharedTaskLists = await sharedTaskListRequest.json();
+            taskLists = [...taskLists, ...sharedTaskLists];
+			var task = '';
+			for (let list of taskLists) {
+				task += '<div class="dropdown" style="float: right; margin-right: 630px;"><button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><i class="fa fa-ellipsis-v"></i></button>';
+				task+=`<div class="dropdown-menu" aria-labelledby="dropdownMenuButton"><a class="dropdown-item" href="#" data-toggle="modal" data-target="#ModalEditTaskList${list.id}">Edit</a><a class="dropdown-item" href="#" data-toggle="modal" data-target="#ModalShareTaskList${list.id}">Share</a><a class="dropdown-item" href="#" data-toggle="modal" data-target="#ModalDeleteTaskList${list.id}">Delete</a></div></div>`;
+				task+= `<div class="modal fade" id="ModalEditTaskList${list.id}" tabindex="-1" role="dialog" aria-labelledby="ModalEditTaskListTitle" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content">
+						<div class="modal-header">
+						<h5 class="modal-title" id="ModalEditTaskListTitle">Edit Task List</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">&times;</span>
+						</button>
+						</div>
+						<div class="modal-body">
+						
+						
+						<div class="form-group">
+						<label class="control-label" for="tasklist">Task List</label>  
+						<div class="">
+							<input id="tasklistname${list.id}" name="tasklist" placeholder="Tasklist" class="form-control input-md" required="" type="text" value="${list.name}">
+						</div>
+						</div>
+						
+						</div>
+						<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+						<button type="button" class="btn btn-primary" onclick="updateTaskList(${list.id});">Save changes</button>
+						</div>
+					</div>
+					</div>
+				</div>`;
+				task+= `<div class="modal fade" id="ModalDeleteTaskList${list.id}" tabindex="-1" role="dialog" aria-labelledby="ModalDeleteTaskListTitle" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+					<h5 class="modal-title" id="ModalDeleteTaskListTitle">Delete confirmation</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					</div>
+					<div class="modal-body" style="text-align: center;">
+					<h4>Are you sure you want to delete?</h4>
+					</div>
+					<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+					<button type="button" class="btn btn-primary" onclick="deleteTaskList(${list.id});">Yes</button>
+					</div>
+				</div>
+				</div>
+			</div>`;
+				task += `<div class="modal fade" id="ModalShareTaskList${list.id}" tabindex="-1" role="dialog" aria-labelledby="ModalShareTaskListTitle" aria-hidden="true">
+				<div class="modal-dialog modal-dialog-centered" role="document">
+				  <div class="modal-content">
+					<div class="modal-header">
+					  <h5 class="modal-title" id="ModalShareTaskListTitle">Share ${list.name}</h5>
+					  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					  </button>
+					</div>
+					<div class="modal-body">
+					  <div class="form-group1">
+						<input id="email-share${list.id}" name="email-share" placeholder="EMAIL" class="form-control input-md" required="" type="email" value="">
+					  </div>
+					</div>
+					<div class="modal-footer">
+					  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					  <button type="button" class="btn btn-primary" onclick="shareTaskList(${list.id});">Share</button>
+					</div>
+				  </div>
+				</div>
+			  </div>`;
+				task+= '<h3 class="read">' + list.name +'</h3>';
+				task+=`<li class="list-inline-item" style="float: right; margin-left: 10px;"><button class="btn btn-primary" data-toggle="modal" data-target="#ModalAdd${list.id}" type="button" data-placement="top" title="Add"><i class="fa fa-table"></i></button></li>`;
+				task+=`<div class="modal fade" id="ModalAdd${list.id}" tabindex="-1" role="dialog" aria-labelledby="ModalAddTitle" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+					<h5 class="modal-title" id="ModalAddTitle">ADD TASK</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					</div>
+					<div class="modal-body">
+					
+					
+					<div class="form-group">
+					<div class="">
+					<input id="id${list.id}" name="id" placeholder="PRODUCT ID" class="form-control input-md" required="" type="text" value="${list.name}" readonly>
+					</div>
+					</div>
+					<div class="form-group">
+						<label class="control-label" for="task_name">Task name</label>
+						<div class="">                     
+						<textarea class="form-control" id="createTaskname${list.id}" name="task_name"></textarea>
+						</div>
+					</div>
+					
+		
+					
+					<div class="form-group">
+						<label class="control-label" for="task_description">Description</label>
+						<div class="">                     
+						<textarea class="form-control" id="createTaskDescription${list.id}" name="task_description"></textarea>
+						</div>
+					</div>
+					
+					
+					<div class="form-group">
+						<label class="control-label" for="task_status">Status</label>
+						<div class="">
+						<select id="createTaskStatus${list.id}" name="task_status" class="form-control">
+						<option selected>Select Status</option>
+						<option value="1">None</option>
+						<option value="2">Done</option>
+						</select>
+						</div>
+					</div>
+					</div>
+					<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary" onclick="createTask(${list.id})">Add</button>
+					</div>
+				</div>
+				</div>
+			</div>`;
+				task+= `<div class="table100 ver1 m-b-110" id = "table-${list.id}"></div>`;
+				
+			}	 
+			
+			document.getElementById('task').innerHTML = task;
+			for (let list of taskLists) {
+				fetchTask(list.id); 
+			}
+			      
+	}
+	const fetchTask = async (selectedTasklist) => {
+		const taskRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}/todos`,{
+			headers: {
+				...user
+			}
+		}); 
+		const tasks = await taskRequest.json();
+		var body = '<div class="table100-head"> <table id = "table-head"><thead><tr class="row100 head"><th class="cell100 column1">Name</th><th class="cell100 column2">Description</th><th class="cell100 column3">Status</th><th class="cell100 column4">Operation</th></tr></thead></table></div>';
+		body += '<div class="table100-body js-pscroll" id="table-body"><table><tbody>';
+		
+		for (let task of tasks) {
+			body+=`<div class="modal fade" id="ModalEditTask${task.id}" tabindex="-1" role="dialog" aria-labelledby="ModalEditTaskTitle" aria-hidden="true">
+			<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+				<h5 class="modal-title" id="ModalEditTaskTitle">Edit</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+				<span aria-hidden="true">&times;</span>
+				</button>
+				</div>
+				<div class="modal-body">
+				
+				<div class="form-group">
+					<label class="control-label" for="task_name">Task name</label>
+					<div class="">                     
+					<textarea class="form-control" id="updateTaskName${task.id}" name="task_name">${task.name}</textarea>
+					</div>
+				</div>
+				<div class="form-group">
+				<label class="control-label" for="updateTaskDescription">Description</label>
+				<div class="">                     
+				<textarea class="form-control" id="updateTaskDescription${task.id}" name="updateTaskDescription">${task.description}</textarea>
+				</div>
+				</div>
+				
+				
+				<div class="form-group">
+				<label class="control-label" for="status">Status</label>
+				<div class="">
+				<select id="updateTaskStatus${task.id}" name="updateTaskStatus" class="form-control">
+				<option value="1">None</option>
+				<option value="2">Done</option>
+				</select>
+				</div>
+				</div>
+				</div>
+				<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+				<button type="button" class="btn btn-primary" onclick="updateTask(${selectedTasklist},${task.id});">Save changes</button>
+				</div>
+			</div>
+			</div>
+			</div>`;
+			body+= `<div class="modal fade" id="ModalDeleteTask${task.id}" tabindex="-1" role="dialog" aria-labelledby="ModalDeleteTaskTitle" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+					<h5 class="modal-title" id="ModalDeleteTaskTitle">Delete Product</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					</div>
+					<div class="modal-body" style="text-align: center;">
+					<h4>Are you sure you want to delete?</h4>
+					</div>
+					<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+					<button type="button" class="btn btn-primary" onclick="deleteTask(${selectedTasklist},${task.id});">Yes</button>
+					</div>
+				</div>
+				</div>
+			</div>`;
+			body+='<tr class="row100 body">';
+			body+='<td class="cell100 column1">'+task.name + '</td>';
+			body+='<td class="cell100 column2">'+task.description + '</td>';
+			body+='<td class="cell100 column3">';
+			
+			if(task.done){
+				body+=`<input type="checkbox" value="" id="flexCheck${task.id}" onclick="updateDone(${selectedTasklist},${task.id});" checked></td>`;
+			}else{
+				body+=`<input type="checkbox" value="" id="flexCheck${task.id}" onclick="updateDone(${selectedTasklist},${task.id});"></td>`;
+			}
+			body+=`<td class="cell100 column4"><ul class="list-inline m-0">
+				<li class="list-inline-item"><button class="btn btn-success btn-sm rounded-0" type="button" data-toggle="modal" data-target="#ModalEditTask${task.id}" data-placement="top" title="Edit"><i class="fa fa-edit"></i></button></li>
+
+				<li class="list-inline-item"><button class="btn btn-danger btn-sm rounded-0" type="button" data-toggle="modal" data-target="#ModalDeleteTask${task.id}" data-placement="top" title="Delete"><i class="fa fa-trash"></i></button>`;
+			
+			body+='</li></ul></td></tr>';
+			
+		}
+		body+='</tbody></table></div>';
+		document.getElementById(`table-${selectedTasklist}`).innerHTML = body;
+		for(let task of tasks){
+			if(task.done){
+				document.getElementById(`updateTaskStatus${task.id}`).selectedIndex = "1";
+			}else{
+				document.getElementById(`updateTaskStatus${task.id}`).selectedIndex = "0";
+			}
+		}
+	}
+	const updateDone = async(selectedTasklist,selectedTask) => {
+		checkBox = document.getElementById(`flexCheck${selectedTask}`);
+		const name = document.getElementById(`updateTaskName${selectedTask}`).value;
+		const description = document.getElementById(`updateTaskDescription${selectedTask}`).value;
+		var done = null;
+		if(checkBox.checked){
+			done = true;
+		}else{
+			done = false;
+		}
+		const createTaskRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}/todos/${selectedTask}`,{
+			method: 'PUT',
+			headers: {
+				...user,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				name: name,
+				description: description,
+				done: done
+			})
+		});
+		
+	}
+
+	const createTaskList = async() => {
+		const name = document.getElementById('createListName').value;
+		const description = document.getElementById('createListDescription').value;
+		const createListRequest = await fetch(`${serverUrl}/task_lists`,{
+			method: 'POST',
+			headers: {
+				...user,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				name, description
+			})
+		});
+		alert("Add Tasklist Successfully");
+		window.location.assign("store.html");
+	}
+	const updateTaskList = async(selectedTasklist) => {
+		const name = document.getElementById(`tasklistname${selectedTasklist}`).value;
+		const updateListRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}`,{
+			method: 'PUT',
+			headers: {
+				...user,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				name: name
+			})
+		});
+		alert("Update Tasklist Successfully");
+		window.location.assign("store.html");   
+	}
+	
+	const deleteTaskList = async(selectedTasklist) => {
+		
+		const deleteListRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}`,{
+			method: 'DELETE',
+			headers: {
+				...user
+			}
+			})
+			alert("Delete Tasklist Successfully");
+			window.location.assign("store.html");   
+		}
+
+		const shareTaskList = async(selectedTasklist) => {
+				var selectedUser;
+				var check = false;
+                const email_share = document.getElementById(`email-share${selectedTasklist}`).value;
+                //const description = document.getElementById('createListDescription').value;
+				
+				const fetchUserRequest = await fetch(`${serverUrl}/users`,{
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...user
+                    }
+                });
+                const users = await fetchUserRequest.json();
+				for (let u of users) {
+					if(u.email == email_share){
+						selectedUser = u.id;
+						check = true;
+					}
+				}
+				if(check){
+					const createListRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}/share`,{
+                    method: 'POST',
+                    headers: {
+                        ...user,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: selectedUser,
+                        task_list_id: selectedTasklist,
+                        is_write: true
+                    })
+                });
+				alert("Share Tasklist Successfully");
+				window.location.assign("store.html");
+				}else{
+					alert("Something went wrong! Please try again");
+					window.location.assign("store.html");
+				}
+                
+            }
+
+	const updateTask = async(selectedTasklist,selectedTask) => {
+		const name = document.getElementById(`updateTaskName${selectedTask}`).value;
+		const description = document.getElementById(`updateTaskDescription${selectedTask}`).value;
+		var done = null;
+		let e = document.getElementById(`updateTaskStatus${selectedTask}`);
+		let sts = e.options[e.selectedIndex].text;
+		if(sts == "None"){
+			done = false;
+		}else{
+			
+			done = true;
+		}
+		
+		const createTaskRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}/todos/${selectedTask}`,{
+			method: 'PUT',
+			headers: {
+				...user,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				name: name,
+				description: description,
+				done: done
+			})
+		});
+		alert("Update Task Successfully");
+		window.location.assign("store.html");   
+	}
+	const createTask = async(selectedTasklist) => {
+		const name = document.getElementById(`createTaskname${selectedTasklist}`).value;
+		const description = document.getElementById(`createTaskDescription${selectedTasklist}`).value;
+		var done = null;
+		let e = document.getElementById(`createTaskStatus${selectedTasklist}`);
+		let sts = e.options[e.selectedIndex].text;
+		if(sts == "Select Status"){
+			alert("Please select a status")
+		}else{
+			if(sts == "None"){
+				done = false;
+			}else{
+				
+				done = true;
+				
+			}
+			const createTaskRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}/todos`,{
+			method: 'POST',
+			headers: {
+				...user,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				name, description, done
+			})
+			});
+		alert("Add task successfully");
+		window.location.assign("store.html");
+		}	
+	}
+	
+	const deleteTask = async(selectedTasklist,selectedTask) => {
+		const deleteTaskRequest = await fetch(`${serverUrl}/task_lists/${selectedTasklist}/todos/${selectedTask}`,{
+			method: 'DELETE',
+			headers: {
+				...user
+			}
+		});
+		alert("Delete task successfully");
+		window.location.assign("store.html");
+			            
+	}
+	
+	function load(){
+		document.getElementById('name').innerHTML = localStorage.getItem("name");
+		fetchTasklist();
+	}
+	
+
+</script>
+</head>
+<body onload="load()">
+	<!-- ======= Header ======= -->
+	<header id="header" class="d-flex align-items-center">
+		<div class="container d-flex justify-content-between">
+			
+		  <div id="logo">
+			<img src ="assets/img/logo.jpg" width="100">
+
+		  </div>
+	
+		  <nav id="navbar" class="navbar">
+			<ul>
+			  <li><a class="nav-link scrollto " href="index.html">Home</a></li>
+			  <li><a class="nav-link scrollto" href="store.html">Store</a></li>
+			  
+			  <nav class="navbar navbar-white bg-white navbar-expand-sm" style="margin-left: 20px;">
+				<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-list-4" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				  <span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="navbar-list-4">
+				  <ul class="navbar-nav">
+					  <li class="nav-item dropdown">
+					  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						
+						<b id="name"></b>
+					  </a>
+					  <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+						<a class="dropdown-item" href="profile.html">Your Profile</a>
+						<a class="dropdown-item" onclick="destroyUser();">Log Out</a>
+					  </div>
+					</li>   
+				  </ul>
+				</div>
+			  </nav>
+			</ul>
+			<i class="bi bi-list mobile-nav-toggle"></i>
+		  </nav><!-- .navbar -->
+	
+		</div>
+	  </header><!-- End Header -->
+	
+	  <!-- ======= hero Section ======= -->
+	  <section id="hero">
+	
+		<div class="hero-content" data-aos="fade-up">
+		  <h2>E4U's <span>store</span><br></h2>
+		  
+		</div>
+	
+		<div class="hero-slider swiper">
+		  <div class="swiper-wrapper">
+			<div class="swiper-slide" style="background-image: url('assets/img/hero-carousel/1.jpg');"></div>
+			<div class="swiper-slide" style="background-image: url('assets/img/hero-carousel/2.jpg');"></div>
+			<div class="swiper-slide" style="background-image: url('assets/img/hero-carousel/3.jpg');"></div>
+			<div class="swiper-slide" style="background-image: url('assets/img/hero-carousel/4.jpg');"></div>
+			<div class="swiper-slide" style="background-image: url('assets/img/hero-carousel/5.jpg');"></div>
+		  </div>
+		</div>
+	
+	  </section><!-- End Hero Section -->
+			<form class="form-inline my-2 my-lg-0" >
+				<div class="col d-flex justify-content-center" style="margin-top: 10px;">
+					<input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+					<button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+				</div>
+				<button type="button" class="btn btn-primary add-new" data-toggle="modal" data-target="#ModalAddSection"><i class="fa fa-plus"></i> Add Task List</button>
+			</form>
+
+	
+	<div class="limiter">
+		<div class="container-table100">
+			<div class="wrap-table100" id="task">
+				
+			</div>
+
+			<div class="modal fade" id="ModalAddSection" tabindex="-1" role="dialog" aria-labelledby="ModalAddSectionTitle" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+					<h5 class="modal-title" id="ModalAddSectionTitle">Add section</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+					</div>
+					<div class="modal-body">
+					
+					
+					<div class="form-group">
+					<label class="control-label" for="tasklist">Task list</label>  
+					<div class="">
+						<input id="createListName" name="tasklist" placeholder="tasklist" class="form-control input-md" required="" type="text" >
+					</div>					
+					</div>
+
+					<div class="form-group">
+						<label class="control-label" for="tasklist">Description</label>  
+						<div class="">
+							<input id="createListDescription" name="description" placeholder="description" class="form-control input-md" required="" type="text" >
+						</div>					
+						</div>
+					
+					</div>
+					<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-primary" onclick="createTaskList();">Add</button>
+					</div>
+				</div>
+				</div>
+			</div>
+			
+		</div>
+	</div>
+
+	<footer class="deneb_footer">
+		<div class="widget_wrapper" >
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-4 col-md-6 col-12">
+						<div class="widget widegt_about">
+							<p>2021@Copyright</p>
+							<ul class="social">
+								<li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
+								<li><a href="#"><i class="fab fa-twitter"></i></a></li>
+								<li><a href="#"><i class="fab fa-instagram"></i></a></li>
+							</ul>
+						</div>
+					</div>
+					<div class="col-lg-4 col-md-6 col-sm-12">
+						<div class="widget widget_contact">
+							<div class="contact_info">
+								<div class="single_info">
+									<div class="icon">
+										<i class="fas fa-phone-alt"></i>
+									</div>
+									<div class="info">
+										<p><a href="tel:+0123456789">0123456789</a></p>
+									</div>
+								</div>
+								<div class="single_info">
+									<div class="icon">
+										<i class="fas fa-envelope"></i>
+									</div>
+									<div class="info">
+										<p><a href="mailto:ly.huynh190204@vnuk.edu.vn">ly.huynh190204@vnuk.edu.vn</a></p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</footer>
+
+	<a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+<!--===============================================================================================-->	
+	<script src="vendor/jquery/jquery-3.2.1.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/bootstrap/js/popper.js"></script>
+	<script src="vendor/bootstrap/js/bootstrap.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/select2/select2.min.js"></script>
+<!--===============================================================================================-->
+	<script src="vendor/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+	<script>
+		$('.js-pscroll').each(function(){
+			var ps = new PerfectScrollbar(this);
+
+			$(window).on('resize', function(){
+				ps.update();
+			})
+		});
+			
+		
+	</script>
+<!--===============================================================================================-->
+	
+	  <!-- Vendor JS Files -->
+	  <script src="assets/vendor/aos/aos.js"></script>
+	  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+	  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+	  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
+	  <script src="assets/vendor/php-email-form/validate.js"></script>
+	  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+	  <script src="bootstrap.bundle.min.js"></script>
+	<script src="jquery-3.3.1.slim.min.js"></script>
+	  
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+	<script src="js/main.js"></script>
+	<script src="assets/js/main.js"></script>	
+	<script src="assets/js/script.js"></script>
+
+</body>
+</html>
